@@ -1,0 +1,23 @@
+body {
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+.wrapper.input {
+	width: 39.5%;
+}
+.wrapper.output {
+	width: 59.5%;
+}
+.wrapper iframe, #output {
+	width: 100%;
+	height: 100%;
+	overflow: scroll;
+	resize:none;
+	padding: 0;
+	margin: 0;
+}
+
+
+.clearfix {
+	clear: both;
+}

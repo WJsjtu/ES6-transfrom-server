@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>ECMAScript 6</title>
+		<link rel="stylesheet" href="/stylesheets/style.css">
+		<link rel="stylesheet" href="/stylesheets/monokai-sublime.css">
+		<style type="text/css"></style>
+	</head>
+<body>
+	<form id="form">
+		<div class="wrapper input" style="float: left;">
+			<iframe id="iframe" src='javascript:document.open();document.write("<!DOCTYPE html><html lang=\"en\"><body style=\"font: 14px Lucida Grande, Helvetica, Arial, sans-serif;\"></body></html>");document.close();'></iframe>
+		</div>
+		<div class="wrapper output" style="float: right;">
+			<pre id="output" class="hljs" style="padding: 5px;"></pre>
+		</div>
+		<div class="clearfix"></div>
+	</form>
+	<script type="text/javascript" src="/statics/jquery.min.js"></script>
+	<script type="text/javascript" src="/javascripts/highlight.js"></script>
+	<script type="text/javascript">
+	$(function(){
+		var frameContents = $('#iframe').contents();
+		frameContents[0].designMode = "on";
+		$(".wrapper").height(window.screen.availHeight * 0.8);
+		frameContents.find("body").height(window.screen.availHeight * 0.8);
+
+		var getInput = function(root){
+			var result = '';
+			Array.prototype.forEach.call(root.childNodes, function(ele, index){
+				if(ele.childNodes.length){
+					var text = getInput(ele);
+					result += result.length ? '\n' + text : text;
+				} else {
+					var text = $(ele).text();
+					result += result.length ? '\n' + text : text;
+				}
+			});
+			return result;
+		};
+
+
+		var timeout, xhr;
+		var requestOutput = function(){
+			xhr = $.ajax({
+				url: '/babel',
+				data: {
+					input: getInput(frameContents[0].body)
+				},
+				dataType: 'json',
+				method: 'POST'
+			}).done(function(data, status){
+				if(!data.errmsg){
+					var content = data.content.replace(/\t/g, '    ');
+					hljs.configure({
+						useBR: true,
+						tabReplace: '  ',
+						languages: ['javascript']
+					});
+					var content = hljs.highlightAuto(content, ['javascript']).value;
+					$("#output").html(content);
+				} else {
+					$("#output").html(data.errmsg);
+				}
+			}).always(function(){
+				timeout || clearTimeout(timeout);
+				timeout = xhr = undefined;
+			});
+		};
+
+		frameContents.on('keydown', function(){
+			xhr && xhr.abort();
+			timeout && clearTimeout(timeout);
+			timeout = setTimeout(function(){
+				requestOutput();
+			}, 1000);
+		});
+
+		$.ajax({
+			url: '/test',
+			dataType: 'html',
+			method: 'GET'
+		}).done(function(_data, _status){
+			$(frameContents[0].body).html(_data);
+			requestOutput();
+		});
+	});
+	</script>
+</body>
+</html>
